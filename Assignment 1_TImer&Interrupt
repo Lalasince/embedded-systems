@@ -1,0 +1,43 @@
+#define INT0_vect _VECTOR(1) 
+#define TIMER1_OVF_vect _VECTOR(13) 
+
+#define F_CPU 16000000UL
+
+#include <avr/io.h>
+#include <util/delay.h>
+
+ISR (INT0_vect) {
+   PORTB = PORTB & 0b11111011;	//red off
+   PORTB = PORTB | 0b00000001; 	//green on
+   TCNT1 = 3036;				//set time count
+}
+
+ISR(TIMER1_OVF_vect) {
+   if (PORTB == 0b00000001) {PORTB = PORTB & 0b11111110;		//green off
+   PORTB = PORTB | 0b00000010;							//yellow on
+   TCNT1 = 49911;}										//set time count
+   else if (PORTB == 0b00000010) {PORTB = PORTB & 0b11111101;	//yellow off
+   PORTB = PORTB | 0b00000100;							//red on
+   TCNT1 = 0;}											//timer GLOBAL off has to use the TIMSK1 =  TIMERSK1 & 0b11111110 instead use TCNT1=0; for LOCAL timer off
+}
+
+int main ()
+{
+   DDRB = 0b00000111;			//Port out/in setup
+   EICRA = EICRA | 0b00000010;	//interrupt setup
+   EIMSK = 1;					//enable interrupt "INT0"
+   
+   TCCR1A = 0b00000000;			//timer interrupt setup
+   TCCR1B = 0b00000101;			//timer interrupt Prescale
+   TIMSK1 = 0b00000001;			//enable timer interrupt "TMR1 overflow interrupt"
+   
+   PORTB = PORTB | 0b00000100; 	//red on
+   
+   sei();						//Turn on GLOBAL interrupt
+   
+   while (1);					//loop do noting waiting for interrupt
+   
+   
+   return(0);
+   
+}
