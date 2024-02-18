@@ -1,0 +1,92 @@
+#define F CPU 16000000UL
+#define UART_RX_vect _VECTOR (18)
+
+#include <avr/io.h>
+#include <util/delay.h>
+
+void adc_init()
+{
+   ADMUX = 0b01000000;
+   ADCSRA = 0b10000111;
+}
+
+int adc_read(char ch)
+{
+   char busy;
+   ADMUX = ADMUX & 0b11110011;
+   ADMUX = ADMUX | ch;
+   ADCSRA = ADCSRA | 0b01000000;
+   do { busy = ADCSRA & 0b01000000; }
+   while(busy!=0);
+   
+   return(ADC);
+}
+
+void serial_begin ()
+{
+   UBRR0 = 25;
+   UCSR0A = 0b00000000;
+   UCSR0B = 0b10011000;
+   UCSR0C = 0b00000110;
+   
+   sei ();
+}
+
+void serial_putc (char data)
+{
+   char busy;
+   do { busy = UCSR0A & 0b00100000; }
+   while (busy==0);
+   UDR0 = data;
+}
+
+void serial_puts(char *data)
+{
+   while (*data) {
+      serial_putc(*data++);
+   }
+}
+
+ISR (UART_RX_vect)
+{
+   char ans;
+   char text[50];
+   char temp[50];
+   float cel,fahren;
+   int res;
+   ans = UDR0;
+   serial_putc(ans);
+   serial_puts("\r\r");
+   
+   
+   if (ans=='1') {
+   res=(float)adc_read(0)*500/1024;
+   cel=res;
+   dtostrf(cel,5,2,temp);
+   sprintf(text,"Temperature is %s C",temp);
+   serial_puts(text);
+   serial_puts("\r\r");
+   }
+   else if (ans=='2') {
+   res=(float)adc_read(0)*500/1024;
+   fahren=(res*9/5)+32;
+   dtostrf(fahren,5,2,temp);
+   sprintf(text,"Temperature is %s F",temp);
+   serial_puts(text);
+   serial_puts("\r\r");
+   }
+   else serial_puts("Please type only 1 or 2 \r\r");
+   serial_puts("Read Temperature in Celsius (1) or Fahrenheit (2) :");
+}
+
+int main(void)
+{
+   serial_begin();
+   DDRB = 0b00000001;
+   adc_init();
+   
+   serial_puts("Read Temperature in Celsius (1) or Fahrenheit (2) :");
+   
+   while(1);
+   
+}
