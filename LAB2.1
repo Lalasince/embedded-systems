@@ -1,0 +1,101 @@
+#define INT0_vect _VECTOR(1)
+#define INT1_vect _VECTOR(2)
+#define TIMER1_OVF_vect _VECTOR(13)
+#define UART_RX_vect _VECTOR (18)
+
+#define F_CPU 16000000UL
+
+#include <avr/io.h>
+#include <util/delay.h>
+
+int s = -1;
+int count = 62411;
+
+ISR (INT0_vect) { //direction config
+  if (s < 0)
+  {
+    s = 1;
+  }
+  else if (s > 0)
+  {
+    s = -1;
+  }
+}
+
+ISR (INT1_vect) { //speed config
+  switch (count) {
+    case 62411:
+      count = 59286;
+      break;
+    case 59286:
+      count = 56161;
+      break;
+    case 56161:
+      count = 53036;
+      break;
+    case 53036:
+      count = 49911;
+      break;
+    default:
+      count = 62411;
+      break;
+  }
+}
+
+ISR(TIMER1_OVF_vect) {
+  if (s < 0) {
+    if (PORTD & 0b00010000)
+    {
+      PORTD = PORTD & ~0b00010000; //red off
+      PORTD = PORTD | 0b00100000;  //yellow on
+    }
+    else if (PORTD & 0b00100000)
+    {
+      PORTD = PORTD & ~0b00100000; //yellow off
+      PORTD = PORTD | 0b01000000; // green on
+    }
+    else if (PORTD & 0b01000000)
+    {
+      PORTD = PORTD & ~0b01000000; //green off
+      PORTD = PORTD | 0b00010000; //red on
+    }
+  }
+  else if (s > 0)
+  {
+    if (PORTD & 0b01000000)
+    {
+      PORTD = PORTD & ~0b01000000; //green off
+      PORTD = PORTD | 0b00100000;  //yellow on
+    }
+    else if (PORTD & 0b00100000)
+    {
+      PORTD = PORTD & ~0b00100000; //yellow off
+      PORTD = PORTD | 0b00010000; //red on
+    }
+    else if (PORTD & 0b00010000)
+    {
+      PORTD = PORTD & ~0b00010000; //red off
+      PORTD = PORTD | 0b01000000; //green on
+    }
+  }
+  TCNT1 = count;
+}
+
+int main ()
+{
+  DDRD = 0b11110000;      //Port out/in setup45
+  EICRA = EICRA | 0b00000010;  //interrupt setup
+  EIMSK = EIMSK | 0b00000011;         //enable interrupt "INT0"
+
+  TCCR1A = 0b00000000;     //timer interrupt setup
+  TCCR1B = 0b00000101;     //timer interrupt Prescale
+  TIMSK1 = 0b00000001;     //enable timer interrupt "TMR1 overflow interrupt"
+
+  PORTD = PORTD | 0b00010000;  //red on
+  TCNT1 = count;
+
+  sei();           //Turn on GLOBAL interrupt
+
+  while (1);         //loop do noting waiting for interrupt
+
+}
