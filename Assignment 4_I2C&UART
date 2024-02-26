@@ -1,134 +1,139 @@
 #define F_CPU 16000000UL
-#include <avr/io.h>
-#include <util/delay.h>
-
-void serial_begin()
-{
-   UBRR0 = 51;
-   UCSR0A = 0b00000000;
-   UCSR0B = 0b10011000;
-   UCSR0C = 0b00000110;
-   
-   sei ();
-}
-
-void serial_putc(char data)
-{
-   char busy;
-   do { busy = UCSR0A & 0b00100000; }
-   while (busy==0);
-   UDR0 = data;
-}
-
-char serial_getc()
-{
-   char busy;
-   do { busy = UCSR0A & 0b10000000; }
-   while (busy==0);
-   return (UDR0);
-}
-
-void serial_puts(char *data)
-{
-      while (*data) {
-      serial_putc(*data++);
-   }
-}
+#include  <avr/io.h>
+#include  <util/delay.h>
 
 void i2c_init()
 {
-   DDRC = 0b00100000;
-   TWSR = 0b00000000;
-   TWBR = 32;
-   TWCR = 0b00000100;
-   
-   PORTB = PORTB & 0b11011111;
-   _delay_ms(100);
-   PORTB = PORTB | 0b00100000;
+    DDRC = 0b00100000; // D9 PC5 Reset as Output 
+    TWSR = 0b00000000; // set prescaler bits to zero
+    TWBR = 32;         // SCL frequency is 200K for 16Mhz
+    TWCR = 0b00000100; // enable TWI module
+    // Reset
+    PORTC = PORTC & 0b11011111;
+    _delay_ms(100);
+    PORTB = PORTB | 0b00100000;
 }
 
-void i2c_start()
+void i2c_start() //Start bit
 {
-   char busy;
-   TWCR = 0b10100100;
-   do { busy = TWCR & 0b10000000; }
-   while (busy==0);
+    char busy;
+    TWCR = 0b10100100; // TWINT,TWSTA,TWEN;
+    do { busy = TWCR & 0b10000000; }
+    while (busy==0);
 }
 
-void i2c_stop(void)
+void i2c_stop(void) //Stop bit
 {
-   TWCR = 0b10010100;
-   _delay_ms(1);
+    TWCR = 0b10010100; // TWINT,TWSTO,TWEN;
+    _delay_ms(1) ; //wait for a short time
 }
 
-void i2c_putc(char data)
+void i2c_putc(char data) //Send 1 byte 
 {
-   char busy;
-   TWDR = data;
-   TWCR = 0b10000100;
-   do { busy = TWCR & 0b10000000; }
-   while (busy==0);
+    char busy;
+    TWDR = data;
+    TWCR = 0b10000100; // TWINT,TWEN;
+    do { busy = TWCR & 0b10000000; }
+    while (busy==0);
 }
 
-char i2c_getc(char ack)
+char i2c_getc(char ack) //Get data can & choose ack or not
 {
-   char busy;
-   if (ack==1) 	TWCR = 0b11000100;
-   else		TWCR = 0b10000100;
-   do { busy = TWCR & 0b10000000; }
-   while (busy==0);
-   return TWDR;
+    char busy;
+    if (ack==1) TWCR = 0b11000100; // TWINT,TWEN,TWEA=1 Send ACK
+    else        TWCR = 0b10000100; // TWINT,TWEN,TWEA=0 Send NACK
+    do { busy = TWCR & 0b10000000; }
+    while (busy==0);
+    return TWDR;
 }
 
 void mcp9803_wr(char addr, char data)
-{
+{  
     i2c_start();
-    i2c_putc(0b10010000); 
+    i2c_putc(0b10010000); //device id + write bit
     i2c_putc(addr);
     i2c_putc(data);
     i2c_stop(); 
 }
 
-float mcp9803_rd(char addr)
+char mcp9803_rd(char addr)
 {
-    int d1;
-    int d2;
+    int D1;
+    int D2;
     float temp;
-    float tempd1;
-    float tempd2;
     
     i2c_start();
-    i2c_putc(0b10010000); 
+    i2c_putc(0b10010000); //device id + write bit
     i2c_putc(addr);
-    i2c_start(); 
-    i2c_putc(0b10010001); 
-    d1= i2c_getc(1); 
-    d2 = i2c_getc(0); 
+    i2c_start(); // restart
+    i2c_putc(0b10010001); //device id + read bit
+    D1= i2c_getc(1); //  read byte 1 & send ack=0
+    D2 = i2c_getc(0); // read byte 2 & send Nack =1
     i2c_stop(); 
-    
-    tempd2 = (float)d2;
-    tempd2 = tempd2/256;
-    tempd1 = (float)d1;
-    temp = tempd1 + tempd2;      
+    float temp_float;
+    temp_float = (float)D2;
+    temp_float = temp_float/256;
+    float temp_int;
+    temp_int = (float)D1;
+    temp = temp_int + temp_float;      
     return temp;
 }
 
-int main()
+
+void serial_begin() //UART Setup
+{
+  UBRR0  = 51;  //BAUD rate 19200             
+  UCSR0A = 0b00000000;
+  UCSR0B = 0b10011000;  // Enable RXCIE Rx Interrupt
+  UCSR0C = 0b00000110;
+
+  sei();  // Enable Global Interrupt
+}
+
+
+
+void serial_putc(char data) // UART Tx Char
+{      
+    char busy;
+    do { busy = UCSR0A & 0b00100000; }
+    while (busy==0);  
+    UDR0 = data;  //Tx      
+}
+
+
+
+void serial_puts(char *data)  //UART Tx String
+{
+    while (*data) {
+       serial_putc(*data++);
+    }    
+}
+
+char serial_getc() 
+{
+   char busy;
+   do { busy = UCSR0A & 0b10000000;}
+   while (busy==0);
+   return (UDR0);
+}
+
+int main(void)
 {
   char data;
   
   i2c_init();
   serial_begin(); 
   
-  mcp9803_wr(0b00000001, 0b01100000); 
+  mcp9803_wr(0b00000001, 0b01100000); //12 bit ADC setup MCP
 
   while(1) {
       data = mcp9803_rd(0b00000000);
-      char temp[30];
+      char temp[20];
       dtostrf(data,6,3,temp);
       char text[50];
-      sprintf(text,"Temperature is %s \r\r",temp); 
-      serial_puts(text);   
-      _delay_ms(1000);
+      sprintf(text,"Temperature is %s \r\r",temp); //built text
+      serial_puts(text);   //show text
+      __builtin_avr_delay_cycles(16000000); // delay 1 sec
   }
+    return (0);
 }
