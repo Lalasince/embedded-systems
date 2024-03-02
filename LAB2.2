@@ -13,6 +13,91 @@ int count = 62411;
 int speedcase = 1;
 
 ISR (INT0_vect) {
+  switch (speedcase) {
+    case 1:
+      speedcase++;
+      count = 59286;
+      if (s < 0)
+      {
+        Serial.print("Red -> Yellow -> Green :");
+        Serial.print(count*-6.4e-2,0);
+        Serial.print("ms \t\r");
+      }
+      else if (s > 0)
+      {
+        Serial.print("Green -> Yellow -> Red :");
+        Serial.print(count*-6.4e-2,0);
+        Serial.print("ms \t\r");
+      }
+      break;
+    case 2:
+      speedcase++;
+      count = 56161;
+      if (s < 0)
+      {
+        Serial.print("Red -> Yellow -> Green :");
+        Serial.print(count*-6.4e-2,0);
+        Serial.print("ms \t\r");
+      }
+      else if (s > 0)
+      {
+        Serial.print("Green -> Yellow -> Red :");
+        Serial.print(count*-6.4e-2,0);
+        Serial.print("ms \t\r");
+      }
+      break;
+    case 3:
+      speedcase++;
+      count = 53036;
+      if (s < 0)
+      {
+        Serial.print("Red -> Yellow -> Green :");
+        Serial.print(count*-6.4e-2,0);
+        Serial.print("ms \t\r");
+      }
+      else if (s > 0)
+      {
+        Serial.print("Green -> Yellow -> Red :");
+        Serial.print(count*-6.4e-2,0);
+        Serial.print("ms \t\r");
+      }
+      break;
+    case 4:
+      speedcase++;
+      count = 49911;
+      if (s < 0)
+      {
+        Serial.print("Red -> Yellow -> Green :");
+        Serial.print(count*-6.4e-2,0);
+        Serial.print("ms \t\r");
+      }
+      else if (s > 0)
+      {
+        Serial.print("Green -> Yellow -> Red :");
+        Serial.print(count*-6.4e-2,0);
+        Serial.print("ms \t\r");
+      }
+      break;
+    case 5:
+      speedcase = 1;
+      count = 62411;
+      if (s < 0)
+      {
+        Serial.print("Red -> Yellow -> Green :");
+        Serial.print(count*-6.4e-2,0);
+        Serial.print("ms \t\r");
+      }
+      else if (s > 0)
+      {
+        Serial.print("Green -> Yellow -> Red :");
+        Serial.print(count*-6.4e-2,0);
+        Serial.print("ms \t\r");
+      }
+      break;
+  }
+}
+
+ISR (INT1_vect) {
   if (s < 0)
   {
     s = 1;
@@ -26,46 +111,6 @@ ISR (INT0_vect) {
     Serial.print("Red -> Yellow -> Green :");
     Serial.print(count*-6.4e-2,0);
     Serial.print("ms \t\r");
-  }
-}
-
-ISR (INT1_vect) {
-switch (speedcase) {
-    case 1: //speed 400ms
-      speedcase++;
-      count = 59286;
-      Serial.print("Red -> Yellow -> Green :");
-      Serial.print(count*-6.4e-2,0);
-      Serial.print("ms \t\r");
-      break;
-    case 2: //speed 600ms
-      speedcase++;
-      count = 56161;
-      Serial.print("Red -> Yellow -> Green :");
-      Serial.print(count*-6.4e-2,0);
-      Serial.print("ms \t\r");
-      break;
-    case 3: //speed 800ms
-      speedcase++;
-      count = 53036;
-      Serial.print("Red -> Yellow -> Green :");
-      Serial.print(count*-6.4e-2,0);
-      Serial.print("ms \t\r");
-      break;
-    case 4: //speed 1000ms
-      speedcase++;
-      count = 49911;
-      Serial.print("Red -> Yellow -> Green :");
-      Serial.print(count*-6.4e-2,0);
-      Serial.print("ms \t\r");
-      break;
-    case 5: //speed 200ms
-      speedcase = 1;
-      count = 62411;
-      Serial.print("Red -> Yellow -> Green :");
-      Serial.print(count*-6.4e-2,0);
-      Serial.print("ms \t\r");
-      break;
   }
 }
 
@@ -124,6 +169,8 @@ int main ()
 
   sei();           //Turn on GLOBAL interrupt
 
-  while (1);         //loop do noting waiting for interrupt
-
+  while (1){//loop do noting waiting for interrupt
+  Serial.print(1);
+  delay(1000);
+  }
 }
